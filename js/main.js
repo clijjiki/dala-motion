@@ -13,7 +13,6 @@ import { Hud } from './ui/hud.js';
 import { Sfx } from './audio/sfx.js';
 import { Voice } from './audio/voice.js';
 import { profile, addRun, setTutorialDone } from './storage/records.js';
-import { DotaBridge } from './bridge/dota.js';
 import { InputSim } from './dev/sim.js';
 
 const $ = (s) => document.querySelector(s);
@@ -35,7 +34,6 @@ const voice = new Voice();
 const recognizer = new HandRecognizer();
 const cursor = new CursorMapper();
 const calibrator = new Calibrator();
-const bridge = new DotaBridge();
 const sim = SIM ? new InputSim() : null;
 
 let tracker = null;
@@ -96,7 +94,7 @@ function applyGameInput(input, t, dt) {
       hud.flash('fist');
     }
   }
-  // Держишь щипок — герой идёт за курсором (как зажатая правая кнопка в Доте).
+  // Держишь щипок — герой идёт за курсором (как зажатая правая кнопка в MOBA).
   if (input.pinchHeld) arena.moveTo(aim.x, aim.y);
   if (input.shootHeld) arena.shootAt(aim.x, aim.y);
   if (input.pan) arena.panCamera(input.pan, dt);
@@ -296,99 +294,6 @@ const TUTORIAL = [
   },
 ];
 
-// ---------- режим Dota 2 ----------
-const dota = {
-  active: false,
-  lastFollow: 0,
-  panning: false,
-  keys() {
-    return { ability: $('#abilityKey').value, ult: $('#ultKey').value };
-  },
-  status() {
-    const el = $('#bridgeStatus');
-    if (!bridge.connected) { el.className = 'pill off'; el.textContent = 'мост не подключён'; }
-    else if (bridge.paused) { el.className = 'pill paused'; el.textContent = 'пауза (F8)'; }
-    else if (this.active) { el.className = 'pill live'; el.textContent = '● управляю Dota'; }
-    else { el.className = 'pill on'; el.textContent = 'мост подключён'; }
-  },
-  setActive(on) {
-    this.active = on;
-    const btn = $('#dotaToggle');
-    btn.textContent = on ? '■ Остановить управление' : '▶ Начать управление';
-    btn.classList.toggle('stop', on);
-    if (!on) bridge.send({ t: 'release' });
-    this.status();
-  },
-  // Жесты → настоящие мышь и клавиатура через мост.
-  update(input, t) {
-    if (!this.active || !bridge.connected) return;
-    if (!input?.present) {
-      if (this.panning) bridge.send({ t: 'pan', x: 0, y: 0 });
-      this.panning = false;
-      return;
-    }
-    const pos = SIM ? { x: cursorPx.x / innerWidth, y: cursorPx.y / innerHeight } : cursor.pos;
-    const k = this.keys();
-    for (const ev of input.events) {
-      if (ev === 'pinch') {
-        const p = SIM ? pos : cursor.stablePos(t);
-        bridge.send({ t: 'rclick', x: p.x, y: p.y });
-        this.lastFollow = t;
-        hud.flash('pinch');
-        this.log('👌 правый клик — идти');
-      } else if (ev === 'shoot') {
-        bridge.send({ t: 'key', k: k.ability });
-        hud.flash('shoot');
-        this.log(`🤏 способность — ${k.ability.toUpperCase()}`);
-      } else if (ev === 'ult') {
-        bridge.send({ t: 'key', k: k.ult });
-        hud.flash('ult');
-        this.log(`✊✊ ульта — ${k.ult.toUpperCase()}`);
-      } else if (ev === 'panStart') {
-        hud.flash('fist');
-        this.log('✊ камера');
-      }
-    }
-    if (input.pan) {
-      bridge.send({ t: 'pan', x: input.pan.x, y: input.pan.y });
-      this.panning = true;
-    } else {
-      if (this.panning) bridge.send({ t: 'pan', x: 0, y: 0 });
-      this.panning = false;
-      bridge.move(pos.x, pos.y);
-    }
-    // Держишь щипок — повторяем правый клик, герой идёт за курсором.
-    if (input.pinchHeld && t - this.lastFollow > 0.15) {
-      bridge.send({ t: 'rclick', x: pos.x, y: pos.y });
-      this.lastFollow = t;
-    }
-  },
-  log(text) {
-    $('#dotaLog').textContent = text;
-  },
-};
-
-async function openCamPip() {
-  if (!('documentPictureInPicture' in window)) {
-    dota.log('Мини-окно поддерживается в Chrome/Edge 116+. Иначе просто уменьши окно браузера и поставь его поверх Доты.');
-    return;
-  }
-  const wrap = $('#camWrap');
-  const pip = await documentPictureInPicture.requestWindow({ width: 420, height: 260 });
-  pip.document.body.style.cssText = 'margin:0;background:#000;overflow:hidden;font-family:sans-serif';
-  const st = pip.document.createElement('style');
-  st.textContent = '#camWrap{position:static;display:block;width:100vw;transform:none}#cam{display:block;width:100%}'
-    + '.cam-label{position:absolute;left:10px;top:8px;font:800 11px sans-serif;color:#fffc;text-transform:uppercase}';
-  pip.document.head.append(st);
-  const home = wrap.parentNode;
-  wrap.classList.add('in-pip');
-  pip.document.body.append(wrap);
-  pip.addEventListener('pagehide', () => {
-    wrap.classList.remove('in-pip');
-    home.append(wrap);
-  });
-}
-
 const SCREENS = {
   intro: {
     enter() {},
@@ -433,29 +338,6 @@ const SCREENS = {
       hud.banner(!SIM && !gs?.present ? '☝️ Покажи руку в камеру, чтобы управлять меню' : null);
       for (const h of input?.hints ?? []) if (h.gesture === 'any' || h.gesture === 'pinch') coach.offer(h, t);
     },
-  },
-
-  dota: {
-    enter() {
-      dota.setActive(false);
-      bridge.ping().then(() => dota.status());
-      this.pingT = 0;
-      pointer.enabled = true;
-    },
-    update(dt, t, input) {
-      // пока управляем Дотой, щипок по кнопкам сайта не нажимает (он уже правый клик в игре)
-      pointer.update({ ...cursorPx, visible: !!gs?.present && !dota.active, pose: gs?.pose, pinch: gs?.progress?.pinch ?? 0, clicked: !dota.active && input?.events.includes('pinch') }, dt);
-      this.pingT -= dt;
-      if (this.pingT <= 0) {
-        this.pingT = 1;
-        if (!dota.active || !bridge.connected) bridge.ping().then(() => dota.status());
-        else dota.status();
-      }
-      dota.update(input, t);
-      hud.update(null, gs);
-      for (const h of input?.hints ?? []) coach.offer(h, t);
-    },
-    exit() { dota.setActive(false); },
   },
 
   tutorial: {
@@ -626,28 +508,12 @@ const SCREENS = {
 
 // ---------- кнопки (работают и рукой, и мышью) ----------
 $('#startBtn').addEventListener('click', start);
-$('#dotaBtn').addEventListener('click', () => { sfx.click(); setScreen('dota'); });
 $('#playBtn').addEventListener('click', () => { sfx.click(); setScreen(profile().tutorialDone ? 'countdown' : 'tutorial'); });
 $('#tutorialBtn').addEventListener('click', () => { sfx.click(); setScreen('tutorial'); });
 $('#recalBtn').addEventListener('click', () => { sfx.click(); setScreen('calibrate'); });
 $('#skipBtn').addEventListener('click', () => { sfx.click(); setTutorialDone(); setScreen('countdown'); });
 $('#againBtn').addEventListener('click', () => { sfx.click(); setScreen('countdown'); });
 $('#menuBtn').addEventListener('click', () => { sfx.click(); setScreen('menu'); });
-$('#dotaBack').addEventListener('click', () => { sfx.click(); setScreen('menu'); });
-$('#pipBtn').addEventListener('click', () => openCamPip().catch((e) => dota.log('Не удалось открыть мини-окно: ' + e.message)));
-$('#dotaToggle').addEventListener('click', async () => {
-  if (dota.active) return dota.setActive(false);
-  if (!(await bridge.ping())) {
-    dota.status();
-    dota.log(location.port === '8765'
-      ? 'Мост не отвечает. Перезапусти: python bridge/dota_bridge.py'
-      : 'Мост не отвечает. Запусти python bridge/dota_bridge.py — он сам откроет сайт на http://127.0.0.1:8765, управляй Дотой оттуда.');
-    return;
-  }
-  dota.setActive(true);
-  dota.log('Управление включено. Переключись в Доту — F8 для паузы.');
-  voice.say('Управление включено');
-});
 $('#voiceBtn').addEventListener('click', () => {
   voice.enabled = !voice.enabled;
   if (!voice.enabled) voice.stop();
@@ -694,8 +560,6 @@ async function start() {
 }
 
 // ---------- главный цикл ----------
-// Когда вкладка видна — кадры по requestAnimationFrame. Когда её закрыла Дота,
-// браузер замораживает rAF, поэтому тикаем из Web Worker (его таймеры не усыпляются).
 let lastFrame = 0;
 function step(now) {
   const t = now / 1000;
@@ -708,9 +572,8 @@ function step(now) {
   const input = fresh ? gs : quiet(gs);
   screen?.update?.(dt, t, input, fresh);
 
-  const inPip = !!document.querySelector('#camWrap.in-pip');
-  if (!SIM && tracker && (inPip || !document.hidden)) camView.draw(video, gs, cursor.boxRect(video.videoWidth, video.videoHeight), t);
   if (document.hidden) return; // не рисуем то, что никто не видит
+  if (!SIM && tracker) camView.draw(video, gs, cursor.boxRect(video.videoWidth, video.videoHeight), t);
   const showArena = ['tutorial', 'countdown', 'play', 'upgrade', 'results'].includes(screenName);
   renderer.draw(showArena ? arena : null, t, screenName === 'play' || screenName === 'tutorial' ? cursorPx : null);
 
@@ -722,7 +585,6 @@ function step(now) {
       `pinchIdx  ${f(a.pinchIndex)}   pinchMid ${f(a.pinchMiddle)}`,
       `ext  i ${f(a.ext.index)} m ${f(a.ext.middle)} r ${f(a.ext.ring)} p ${f(a.ext.pinky)} t ${f(a.ext.thumb)}`,
       `facing ${f(a.facing)}   palm ${f(a.palmRel)}   pan ${gs.pan ? f(gs.pan.x) + ',' + f(gs.pan.y) : '—'}`,
-      `bridge ${bridge.connected ? 'on' : 'off'}  sent ${bridge.sent}`,
     ].join('\n');
   }
 }
@@ -731,13 +593,8 @@ function rafLoop(now) {
   requestAnimationFrame(rafLoop);
   step(now);
 }
-const ticker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 16);'], { type: 'text/javascript' })));
-ticker.onmessage = () => {
-  if (document.hidden || document.querySelector('#camWrap.in-pip')) step(performance.now());
-};
-
 $('#debug').hidden = !DEBUG;
-if (DEBUG || SIM) window.__dala = { arena, coach, setScreen, bridge, renderer }; // доступ из консоли для отладки
+if (DEBUG || SIM) window.__dala = { arena, coach, setScreen, renderer }; // доступ из консоли для отладки
 if (SIM) {
   $('#startBtn').textContent = 'Старт (режим мыши)';
   $('#camWrap').style.visibility = 'hidden';

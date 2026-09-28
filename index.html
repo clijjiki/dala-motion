@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>DALA Motion — Dota жестами</title>
+  <title>DALA Motion — игра жестами рук</title>
   <meta name="description" content="Браузерная игра, которой управляют жестами руки через веб-камеру. Admit Hackathon 2026, кейс Motion." />
   <meta name="theme-color" content="#0d0a24" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✋</text></svg>" />
@@ -48,7 +48,7 @@
     <div class="card intro">
       <p class="kicker">Admit Hackathon 2026 · кейс «Motion»</p>
       <h1>DALA<br />MOTION</h1>
-      <p class="lead">Веб-камера вместо мыши. Управляй Dota 2 или тренировочной ареной одной рукой: палец — курсор, щипок — идти, кулак — камера.</p>
+      <p class="lead">Веб-камера вместо мыши. Защити степь от духов в духе Archero — одной рукой: щипок — бежать, стоишь — герой стреляет, кулак — камера.</p>
       <ol class="steps">
         <li><b>1</b>Разреши доступ к камере</li>
         <li><b>2</b>Покажи раскрытую ладонь</li>
@@ -77,8 +77,7 @@
       <h2>DALA MOTION</h2>
       <p class="hint-line">Наведи указательный палец на кнопку и сведи 👌 большой и указательный — или просто подержи.</p>
       <div class="menu-buttons">
-        <button class="btn primary big" data-hand id="dotaBtn">🎮 Режим Dota 2</button>
-        <button class="btn big" data-hand id="playBtn">⚔️ Тренировочная арена</button>
+        <button class="btn primary big" data-hand id="playBtn">▶ Играть</button>
         <button class="btn" data-hand id="tutorialBtn">🎓 Обучение</button>
         <button class="btn" data-hand id="recalBtn">🖐 Перекалибровка</button>
         <button class="btn" data-hand id="voiceBtn">🔊 Голос: вкл</button>
@@ -107,31 +106,6 @@
       <h2>Выбери умение</h2>
       <div class="upg-cards" id="upgCards"></div>
       <p class="hint-line">Наведи палец на карточку и сведи 👌 большой и указательный — или подержи.</p>
-    </div>
-  </section>
-
-  <!-- ЭКРАН: управление Dota 2 -->
-  <section class="panel" id="p-dota">
-    <div class="card dota">
-      <div class="dota-head">
-        <h2>🎮 Режим Dota 2</h2>
-        <span id="bridgeStatus" class="pill off">мост не подключён</span>
-      </div>
-      <ol class="dota-steps">
-        <li>Скачай проект и запусти помощника: <code>python bridge/dota_bridge.py</code> — он сам откроет этот сайт на <b>127.0.0.1:8765</b>.</li>
-        <li>В Доте: <b>Настройки → Видео → Окно без рамки</b>, включи <b>быстрое применение</b> (Quick Cast) для способностей.</li>
-        <li>Нажми <b>«Мини-окно камеры»</b> — оно будет поверх Доты, как в ролике. Потом <b>«Начать управление»</b>.</li>
-      </ol>
-      <div class="dota-grid">
-        <label>Способность (🤏) <select id="abilityKey"><option>q</option><option>w</option><option>e</option><option>d</option><option>f</option></select></label>
-        <label>Ульта (✊✊) <select id="ultKey"><option>r</option><option>d</option><option>f</option><option>t</option></select></label>
-      </div>
-      <div class="menu-buttons">
-        <button class="btn primary big" id="dotaToggle">▶ Начать управление</button>
-        <button class="btn" id="pipBtn">🪟 Мини-окно камеры</button>
-        <button class="btn" data-hand id="dotaBack">☰ Меню</button>
-      </div>
-      <p class="fine" id="dotaLog">F8 на клавиатуре — мгновенная пауза. Спрячь руку из кадра — управление остановится.</p>
     </div>
   </section>
 

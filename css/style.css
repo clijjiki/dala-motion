@@ -288,32 +288,6 @@ body[data-screen="results"] .toast { display: none; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-/* ---------- режим Dota 2 ---------- */
-body[data-screen="dota"] #p-dota { display: flex; justify-content: flex-end; }
-body[data-screen="dota"] #camWrap { width: min(620px, 50vw); left: 2vw; right: auto; bottom: auto; top: 50%; transform: translateY(-50%); }
-body[data-screen="dota"] #gestures { display: flex; }
-.dota { width: min(520px, 100%); }
-.dota-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.pill { font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); }
-.pill.off { color: var(--red); border-color: rgba(255, 77, 109, 0.5); }
-.pill.on { color: var(--green); border-color: rgba(61, 220, 151, 0.5); }
-.pill.live { color: #1a0b25; background: var(--green); border-color: var(--green); animation: pulse 0.8s infinite alternate; }
-.pill.paused { color: var(--gold); border-color: var(--gold); }
-.dota-steps { margin: 16px 0; padding-left: 20px; color: var(--muted); line-height: 1.55; font-size: 14.5px; }
-.dota-steps li { margin-bottom: 6px; }
-.dota-steps b { color: var(--text); }
-code { font-family: ui-monospace, monospace; background: rgba(255, 255, 255, 0.08); padding: 2px 6px; border-radius: 6px; color: var(--gold); user-select: all; }
-.dota-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.dota-grid label { display: grid; gap: 6px; font-weight: 700; font-size: 13px; color: var(--muted); }
-.dota-grid select { font: 800 16px var(--font); color: var(--text); background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 10px; padding: 8px; text-transform: uppercase; }
-.dota-grid option { background: #1a1440; }
-#dotaToggle.stop { background: linear-gradient(120deg, #ff4d6d, #ff8e6e); }
-@media (max-width: 900px) {
-  body[data-screen="dota"] #p-dota { align-items: flex-end; }
-  body[data-screen="dota"] #camWrap { width: calc(100vw - 32px); left: 16px; top: 16px; transform: none; }
-  body[data-screen="dota"] #gestures { display: none; }
-}
-
 /* ---------- выбор умения ---------- */
 body[data-screen="upgrade"] #hud { display: flex; }
 .upg { width: min(820px, 100%); text-align: center; }

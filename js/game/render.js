@@ -181,7 +181,7 @@ export class ArenaRenderer {
     ctx.shadowBlur = 0;
   }
 
-  // Мини-карта как в Доте: герой, враги и рамка того, что сейчас видно.
+  // Мини-карта как в MOBA: герой, враги и рамка того, что сейчас видно.
   minimap(arena) {
     const { ctx, W } = this;
     const mw = Math.min(200, W * 0.2), mh = (mw * arena.WH) / arena.WW;
