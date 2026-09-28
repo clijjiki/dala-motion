@@ -130,6 +130,10 @@ function handleArenaEvents(t) {
           arena.stats.pinch.err++;
           coach.force({ id: 'hurt_orb', gesture: 'pinch', kind: 'danger', icon: '💥', focus: PINCH,
             text: 'Попал снаряд шамана! Зелёные шары летят по прямой — отойди щипком 👌 в сторону' }, t);
+        } else if (ev.source === 'boar') {
+          arena.stats.pinch.err++;
+          coach.force({ id: 'hurt_boar', gesture: 'pinch', kind: 'danger', icon: '🐗', focus: PINCH,
+            text: 'Кабан протаранил! Когда видишь красную линию — уходи щипком 👌 вбок, а не назад' }, t);
         } else if (ev.source === 'slam') {
           arena.stats.pinch.err++;
           coach.force({ id: 'hurt_slam', gesture: 'pinch', kind: 'danger', icon: '💥', focus: PINCH,
@@ -156,6 +160,23 @@ function handleArenaEvents(t) {
         coach.offer({ id: 'hero_offscreen', gesture: 'fist', icon: '🧭', focus: FIST,
           text: 'Герой за краем экрана — сожми кулак ✊ и веди руку к жёлтой стрелке' }, t);
         break;
+      case 'chooseUpgrade':
+        sfx.win();
+        setScreen('upgrade');
+        return;
+      case 'abilityCd':
+        coach.offer({ id: 'ability_cd', gesture: 'shoot', icon: '⏳',
+          text: `Залп перезаряжается — ещё ${ev.left.toFixed(1)} с. Пока стой на месте: герой стреляет сам` }, t);
+        break;
+      case 'notShooting':
+        arena.stats.pinch.err++;
+        coach.offer({ id: 'not_shooting', gesture: 'pinch', icon: '🏹', focus: PINCH,
+          text: 'Герой стреляет только стоя! Разведи пальцы 👌 — он остановится и начнёт стрелять' }, t);
+        break;
+      case 'boarAim':
+        coach.offer({ id: 'boar_warn', gesture: 'pinch', kind: 'info', icon: '🐗',
+          text: 'Кабан целится — красная линия! Щипком 👌 уйди с неё в сторону' }, t);
+        break;
       case 'ultNotReady':
         arena.stats.ult.err++;
         coach.offer({ id: 'ult_not_ready', gesture: 'ult', icon: '✊✊',
@@ -170,7 +191,7 @@ function handleArenaEvents(t) {
         voice.say(ev.wave.tip.replace(/[^\p{L}\p{N}\s,.—-]/gu, ''));
         break;
       case 'waveClear':
-        coach.offer({ id: 'wave_clear', kind: 'good', icon: '🏆', text: `Волна ${ev.idx + 1} пройдена! +${CONFIG.game.healBetweenWaves} здоровья` }, t);
+        coach.offer({ id: 'wave_clear', kind: 'good', icon: '🏆', text: `Этаж ${ev.idx + 1} пройден! +${CONFIG.game.healBetweenWaves} здоровья` }, t);
         break;
       case 'win':
         sfx.win();
@@ -198,13 +219,13 @@ function showWaveTitle(title, tip) {
 let screenName = null;
 let screen = null;
 
-function setScreen(name) {
+function setScreen(name, arg) {
   screen?.exit?.();
   screenName = name;
   screen = SCREENS[name];
   document.body.dataset.screen = name;
   hud.banner(null);
-  screen.enter?.();
+  screen.enter?.(arg);
 }
 
 function renderRecords(el, top, highlight) {
@@ -213,7 +234,7 @@ function renderRecords(el, top, highlight) {
     return;
   }
   const rows = top.slice(0, 5).map((r, i) =>
-    `<tr class="${r === highlight ? 'me' : ''}"><td>${i + 1}</td><td>${escapeHtml(r.name)}</td><td>волна ${r.wave}</td><td>${r.score}</td></tr>`).join('');
+    `<tr class="${r === highlight ? 'me' : ''}"><td>${i + 1}</td><td>${escapeHtml(r.name)}</td><td>этаж ${r.wave}</td><td>${r.score}</td></tr>`).join('');
   el.innerHTML = `<h3>Рекорды арены</h3><table>${rows}</table>`;
 }
 
@@ -256,8 +277,8 @@ const TUTORIAL = [
     done() { arena.centerCam(); },
   },
   {
-    icon: '🤏', title: 'Способность',
-    text: 'Коснись большим пальцем СРЕДНЕГО — снаряд полетит от героя к курсору. Победи волка-мишень.',
+    icon: '🤏', title: 'Залп',
+    text: 'Коснись большим пальцем СРЕДНЕГО — веер стрел полетит к курсору. Победи волка-мишень. В бою герой ещё и сам стреляет, когда стоит.',
     setup() {
       const h = arena.hero;
       arena.spawn('wolf', { x: h.x + 260, y: h.y });
@@ -518,9 +539,9 @@ const SCREENS = {
   },
 
   play: {
-    enter() {
+    enter(resume) {
       this.lost = 0;
-      arena.events.push({ type: 'waveStart', idx: 0, wave: arena.wave });
+      if (!resume) arena.events.push({ type: 'waveStart', idx: 0, wave: arena.wave });
       pointer.enabled = false;
     },
     update(dt, t, input) {
@@ -539,12 +560,39 @@ const SCREENS = {
     exit() { pointer.enabled = true; },
   },
 
+  upgrade: {
+    enter() {
+      $('#upgKicker').textContent = `Этаж ${arena.floor} пройден!`;
+      $('#upgCards').innerHTML = arena.choices.map((u) => {
+        const lvl = arena.taken[u.id] ?? 0;
+        return `<button class="btn upg-card" data-hand data-id="${u.id}"><em>${u.icon}</em><b>${u.name}</b><small>${u.desc}</small>`
+          + `<span class="lvl">${lvl ? `уровень ${lvl} → ${lvl + 1}` : 'новое'}</span></button>`;
+      }).join('');
+      for (const b of document.querySelectorAll('.upg-card')) {
+        b.addEventListener('click', () => {
+          sfx.ok();
+          arena.chooseUpgrade(b.dataset.id);
+          setScreen('play', true);
+        });
+      }
+      voice.say('Этаж пройден. Выбери умение');
+      pointer.enabled = true;
+      this.wait = 0.9; // сначала осмотреться: случайный щипок или наведение не выберут карточку
+    },
+    update(dt, t, input) {
+      this.wait -= dt;
+      pointer.enabled = this.wait <= 0;
+      pointer.update({ ...cursorPx, visible: !!gs?.present, pose: gs?.pose, pinch: gs?.progress?.pinch ?? 0, clicked: input?.events.includes('pinch') }, dt);
+      hud.update(arena, gs);
+    },
+  },
+
   results: {
     enter() {
       voice.stop();
       const a = arena;
       const acc = a.shots ? Math.round((a.hits / a.shots) * 100) : 0;
-      const run = { score: a.score, wave: Math.min(5, a.waveIdx + 1), won: a.won, kills: a.kills };
+      const run = { score: a.score, wave: Math.min(10, a.floor), won: a.won, kills: a.kills };
       const rec = addRun(run);
       $('#resTitle').textContent = a.won ? '🏆 Победа! Шаңырақ защищён' : '💀 Поражение';
       $('#resScore').textContent = a.score;
@@ -552,9 +600,9 @@ const SCREENS = {
       const s = a.stats;
       const cell = (label, value) => `<div><small>${label}</small><b>${value}</b></div>`;
       $('#resGrid').innerHTML = [
-        cell('Волна', `${run.wave}/5`),
+        cell('Этаж', `${run.wave}/10`),
         cell('Побеждено', a.kills),
-        cell('Точность', acc + '%'),
+        cell('Умений', Object.values(a.taken).reduce((x, y) => x + y, 0)),
         cell('Время', Math.round(a.time) + ' c'),
         cell('👌 Шагов', s.pinch.ok),
         cell('🤏 Попаданий', s.shoot.ok),
@@ -663,7 +711,7 @@ function step(now) {
   const inPip = !!document.querySelector('#camWrap.in-pip');
   if (!SIM && tracker && (inPip || !document.hidden)) camView.draw(video, gs, cursor.boxRect(video.videoWidth, video.videoHeight), t);
   if (document.hidden) return; // не рисуем то, что никто не видит
-  const showArena = ['tutorial', 'countdown', 'play', 'results'].includes(screenName);
+  const showArena = ['tutorial', 'countdown', 'play', 'upgrade', 'results'].includes(screenName);
   renderer.draw(showArena ? arena : null, t, screenName === 'play' || screenName === 'tutorial' ? cursorPx : null);
 
   if (DEBUG && gs?.a) {
@@ -689,7 +737,7 @@ ticker.onmessage = () => {
 };
 
 $('#debug').hidden = !DEBUG;
-if (DEBUG || SIM) window.__dala = { arena, coach, setScreen, bridge }; // доступ из консоли для отладки
+if (DEBUG || SIM) window.__dala = { arena, coach, setScreen, bridge, renderer }; // доступ из консоли для отладки
 if (SIM) {
   $('#startBtn').textContent = 'Старт (режим мыши)';
   $('#camWrap').style.visibility = 'hidden';

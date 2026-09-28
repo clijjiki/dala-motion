@@ -41,6 +41,7 @@ body[data-screen="calibrate"] #p-calibrate,
 body[data-screen="menu"] #p-menu,
 body[data-screen="tutorial"] #p-tutorial,
 body[data-screen="countdown"] #p-countdown,
+body[data-screen="upgrade"] #p-upgrade,
 body[data-screen="results"] #p-results { display: flex; }
 
 .card {
@@ -311,4 +312,20 @@ code { font-family: ui-monospace, monospace; background: rgba(255, 255, 255, 0.0
   body[data-screen="dota"] #p-dota { align-items: flex-end; }
   body[data-screen="dota"] #camWrap { width: calc(100vw - 32px); left: 16px; top: 16px; transform: none; }
   body[data-screen="dota"] #gestures { display: none; }
+}
+
+/* ---------- выбор умения ---------- */
+body[data-screen="upgrade"] #hud { display: flex; }
+.upg { width: min(820px, 100%); text-align: center; }
+.upg-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0 8px; }
+.upg-card { display: grid; gap: 8px; justify-items: center; padding: 22px 14px; min-height: 190px; align-content: center; }
+.upg-card em { font-style: normal; font-size: 48px; }
+.upg-card b { font-family: var(--font-head); font-size: 17px; }
+.upg-card small { color: var(--muted); font-size: 13.5px; font-weight: 600; line-height: 1.35; }
+.upg-card .lvl { color: var(--gold); font-size: 12px; }
+#skills { font-size: 18px; min-height: 22px; letter-spacing: 2px; text-shadow: 0 1px 4px #000; }
+@media (max-width: 720px) {
+  .upg-cards { grid-template-columns: 1fr; }
+  .upg-card { min-height: 0; grid-template-columns: auto 1fr; justify-items: start; text-align: left; }
+  .upg-card em { grid-row: span 3; font-size: 36px; }
 }

@@ -1,4 +1,7 @@
 import { CONFIG } from '../config.js';
+import { UPGRADES } from '../game/upgrades.js';
+
+const UP = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
 
 const $ = (s) => document.querySelector(s);
 const G = CONFIG.game;
@@ -9,6 +12,7 @@ export class Hud {
     this.energy = $('#energyFill');
     this.score = $('#score');
     this.wave = $('#waveLabel');
+    this.skills = $('#skills');
     this.cards = {};
     for (const el of document.querySelectorAll('.gcard')) this.cards[el.dataset.g] = el;
     this.toastEl = $('#toast');
@@ -19,11 +23,13 @@ export class Hud {
   update(arena, gstate) {
     if (arena) {
       const h = arena.hero;
-      this.hp.style.width = (h.hp / G.heroHp) * 100 + '%';
+      this.hp.style.width = (h.hp / h.maxHp) * 100 + '%';
       this.energy.style.width = (h.energy / G.ultCost) * 100 + '%';
       this.energy.parentElement.classList.toggle('ready', h.energy >= G.ultCost);
       this.score.textContent = arena.score;
-      this.wave.textContent = arena.wave ? `${arena.waveIdx + 1}/5` : '5/5';
+      this.wave.textContent = `${Math.max(1, arena.floor)}/10`;
+      const icons = Object.entries(arena.taken ?? {}).map(([id, n]) => (UP[id]?.icon ?? '') + (n > 1 ? '×' + n : '')).join(' ');
+      if (icons !== this.lastIcons) { this.lastIcons = icons; this.skills.textContent = icons; }
     }
     const pr = gstate?.progress ?? {};
     const active = {

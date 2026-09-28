@@ -42,8 +42,10 @@ export class ArenaRenderer {
       if (arena.hero.target) this.targetMark(arena.hero.target, t);
       this.aimLine(arena, cursor);
       for (const o of arena.orbs) this.orb(o, t);
+      for (const e of arena.enemies) if (e.mode === 'aim') this.boarLine(e, t);
       for (const e of arena.enemies) this.enemy(e, t);
       this.hero(arena.hero, t);
+      this.vortex(arena, t);
       for (const b of arena.bolts) this.bolt(b);
       for (const n of arena.novas) this.nova(n);
       this.fx(arena);
@@ -283,6 +285,22 @@ export class ArenaRenderer {
       ctx.lineTo(s, -s * 0.6 - wob);
       ctx.quadraticCurveTo(s * 1.1, s * 0.6, 0, s);
       ctx.quadraticCurveTo(-s * 1.1, s * 0.6, -s, -s * 0.6 + wob);
+    } else if (e.type === 'bat') {
+      const f = Math.sin(e.phase * 22) * 0.5 + 0.5;
+      const s = e.r;
+      ctx.moveTo(0, -s * 0.4);
+      ctx.quadraticCurveTo(-s * 1.2, -s * (0.6 + f), -s * 1.9, s * 0.2);
+      ctx.quadraticCurveTo(-s * 0.9, 0, 0, s * 0.6);
+      ctx.quadraticCurveTo(s * 0.9, 0, s * 1.9, s * 0.2);
+      ctx.quadraticCurveTo(s * 1.2, -s * (0.6 + f), 0, -s * 0.4);
+    } else if (e.type === 'boar') {
+      ctx.ellipse(0, 0, e.r * 1.15, e.r * 0.85, 0, 0, Math.PI * 2);
+      ctx.moveTo(-e.r * 0.6, e.r * 0.4);
+      ctx.lineTo(-e.r * 0.9, e.r * 0.95);
+      ctx.lineTo(-e.r * 0.35, e.r * 0.55);
+      ctx.moveTo(e.r * 0.6, e.r * 0.4);
+      ctx.lineTo(e.r * 0.9, e.r * 0.95);
+      ctx.lineTo(e.r * 0.35, e.r * 0.55);
     } else if (e.type === 'golem') {
       ctx.roundRect(-e.r, -e.r, e.r * 2, e.r * 2, 8);
     } else if (e.type === 'shaman') {
@@ -300,6 +318,19 @@ export class ArenaRenderer {
     }
     ctx.fill();
     ctx.shadowBlur = 0;
+    if (e.slow > 0) {
+      ctx.strokeStyle = 'rgba(140,220,255,0.9)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, e.r + 4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (e.burn > 0) {
+      ctx.fillStyle = `rgba(255,120,40,${0.35 + 0.25 * Math.sin(t * 20)})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, e.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // глаза
     ctx.fillStyle = d.boss ? '#fff' : '#ff3b5c';
@@ -322,14 +353,60 @@ export class ArenaRenderer {
 
   bolt(b) {
     const { ctx } = this;
-    this.glow('#ffd166', 18);
-    ctx.strokeStyle = '#fff3c4';
-    ctx.lineWidth = 5;
+    const color = b.fire ? '#ff8c42' : b.ice ? '#8cdcff' : b.big ? '#ffd166' : '#fff3c4';
+    const ang = Math.atan2(b.vy, b.vx);
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(ang);
+    this.glow(color, b.big ? 18 : 10);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = b.big ? 4 : 2.5;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(b.x, b.y);
-    ctx.lineTo(b.x - b.vx * 0.03, b.y - b.vy * 0.03);
+    ctx.moveTo(-18, 0);
+    ctx.lineTo(4, 0);
     ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(10, 0);
+    ctx.lineTo(2, -5);
+    ctx.lineTo(2, 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    ctx.shadowBlur = 0;
+  }
+
+  // Кабан целится: красная линия будущего рывка.
+  boarLine(e, t) {
+    const { ctx } = this;
+    const len = 720 * 0.55;
+    ctx.save();
+    ctx.strokeStyle = `rgba(255,60,90,${0.5 + 0.4 * Math.sin(t * 25)})`;
+    ctx.lineWidth = e.r * 1.6;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.moveTo(e.x, e.y);
+    ctx.lineTo(e.x + e.dash.x * len, e.y + e.dash.y * len);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Умение «Вихрь»: шары вокруг героя.
+  vortex(arena, t) {
+    const n = arena.s?.orbs;
+    if (!n) return;
+    const { ctx } = this;
+    const h = arena.hero;
+    for (let i = 0; i < n; i++) {
+      const a = arena.time * 3 + (i * Math.PI * 2) / n;
+      this.glow('#ff8c42', 18);
+      ctx.fillStyle = '#ffb36b';
+      ctx.beginPath();
+      ctx.arc(h.x + Math.cos(a) * 80, h.y + Math.sin(a) * 80, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.shadowBlur = 0;
   }
 

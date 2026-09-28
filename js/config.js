@@ -45,11 +45,10 @@ export const CONFIG = {
   game: {
     heroHp: 150,
     heroRegen: 1.5,       // HP в секунду
-    autoRange: 290,       // автоатака, как в Доте: герой сам бьёт ближайшего врага
+    autoRange: 750,       // как в Archero: стоишь — герой сам стреляет в ближайшего врага
     autoCooldown: 0.6,
-    autoDamage: 1,
+    abilityCooldown: 3,   // «Залп» (средний + большой)
     aimAssist: 170,       // способность летит во врага, ближайшего к курсору в этом радиусе
-    boltPierce: 3,        // способность пробивает несколько врагов
     heroSpeed: 300,
     boltSpeed: 820,
     boltCooldown: 0.32,

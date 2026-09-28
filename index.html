@@ -21,9 +21,10 @@
     <div class="bars">
       <div class="bar hp"><span>Здоровье</span><i id="hpFill"></i></div>
       <div class="bar energy"><span>Ульта</span><i id="energyFill"></i></div>
+      <div id="skills"></div>
     </div>
     <div class="hud-right">
-      <div class="stat"><small>Волна</small><b id="waveLabel">1/5</b></div>
+      <div class="stat"><small>Этаж</small><b id="waveLabel">1/10</b></div>
       <div class="stat"><small>Счёт</small><b id="score">0</b></div>
     </div>
   </header>
@@ -31,7 +32,7 @@
   <!-- Карточки жестов: живой прогресс каждого жеста -->
   <nav id="gestures">
     <div class="gcard" data-g="pinch"><em>👌</em><span>Идти</span><small>большой + указательный</small><i></i></div>
-    <div class="gcard" data-g="shoot"><em>🤏</em><span>Способность</span><small>большой + средний</small><i></i></div>
+    <div class="gcard" data-g="shoot"><em>🤏</em><span>Залп</span><small>залп, большой + средний</small><i></i></div>
     <div class="gcard" data-g="fist"><em>✊</em><span>Камера</span><small>кулак + движение</small><i></i></div>
     <div class="gcard" data-g="ult"><em>✊✊</em><span>Ульта</span><small>два кулака</small><i></i></div>
   </nav>
@@ -97,6 +98,16 @@
       <button class="btn small" data-hand id="skipBtn">Пропустить обучение</button>
     </div>
     <div id="tutTarget"></div>
+  </section>
+
+  <!-- ЭКРАН: выбор умения после этажа (как в Archero) -->
+  <section class="panel" id="p-upgrade">
+    <div class="card upg">
+      <p class="kicker" id="upgKicker">Этаж пройден!</p>
+      <h2>Выбери умение</h2>
+      <div class="upg-cards" id="upgCards"></div>
+      <p class="hint-line">Наведи палец на карточку и сведи 👌 большой и указательный — или подержи.</p>
+    </div>
   </section>
 
   <!-- ЭКРАН: управление Dota 2 -->
