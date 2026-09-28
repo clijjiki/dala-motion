@@ -11,7 +11,6 @@ import { CamView } from './ui/camview.js';
 import { HandPointer } from './ui/pointer.js';
 import { Hud } from './ui/hud.js';
 import { Sfx } from './audio/sfx.js';
-import { Voice } from './audio/voice.js';
 import { profile, addRun, setTutorialDone } from './storage/records.js';
 import { InputSim } from './dev/sim.js';
 
@@ -30,7 +29,6 @@ const camView = new CamView($('#cam'));
 const pointer = new HandPointer($('#pointer'));
 const hud = new Hud();
 const sfx = new Sfx();
-const voice = new Voice();
 const recognizer = new HandRecognizer();
 const cursor = new CursorMapper();
 const calibrator = new Calibrator();
@@ -46,7 +44,6 @@ const coach = new Coach((h) => {
   hud.toast(h);
   camView.setFocus(h.focus, nowT);
   if (h.kind !== 'good') sfx.hint();
-  voice.say(h.say ?? h.text);
   if ((screenName === 'play' || screenName === 'tutorial') && arena.stats[h.gesture]) arena.stats[h.gesture].err++;
 });
 
@@ -186,7 +183,6 @@ function handleArenaEvents(t) {
       case 'waveStart':
         sfx.wave();
         showWaveTitle(ev.wave.title, ev.wave.tip);
-        voice.say(ev.wave.tip.replace(/[^\p{L}\p{N}\s,.—-]/gu, ''));
         break;
       case 'waveClear':
         coach.offer({ id: 'wave_clear', kind: 'good', icon: '🏆', text: `Этаж ${ev.idx + 1} пройден! +${CONFIG.game.healBetweenWaves} здоровья` }, t);
@@ -302,8 +298,6 @@ const SCREENS = {
   calibrate: {
     enter() {
       calibrator.reset();
-      this.lastIssue = null;
-      this.lastSay = 0;
       if (SIM) setTimeout(() => setScreen('menu'), 50);
     },
     update(dt, t, input, fresh) {
@@ -311,15 +305,9 @@ const SCREENS = {
       const res = calibrator.update(gs, t, video.videoWidth, video.videoHeight);
       $('#calibRing').style.setProperty('--p', calibrator.progress);
       $('#calibIssue').textContent = calibrator.issue ?? 'Отлично, держи…';
-      if (calibrator.issue && calibrator.issue !== this.lastIssue && t - this.lastSay > 3) {
-        voice.say(calibrator.issue);
-        this.lastSay = t;
-      }
-      this.lastIssue = calibrator.issue;
       if (res) {
         cursor.calibrate(res.anchor, res.palm, video.videoWidth, video.videoHeight);
         sfx.ok();
-        voice.say('Готово!');
         setScreen('menu');
       }
     },
@@ -330,7 +318,6 @@ const SCREENS = {
       const p = profile();
       $('#playerName').textContent = p.name;
       renderRecords($('#menuRecords'), p.top);
-      $('#voiceBtn').textContent = voice.enabled ? '🔊 Голос: вкл' : '🔇 Голос: выкл';
       pointer.enabled = true;
     },
     update(dt, t, input) {
@@ -354,7 +341,6 @@ const SCREENS = {
       this.i++;
       if (this.i >= TUTORIAL.length) {
         setTutorialDone();
-        voice.say('Отлично! Поехали!');
         setScreen('countdown');
         return;
       }
@@ -367,7 +353,6 @@ const SCREENS = {
       $('#tutText').textContent = step.text;
       $('#tutFill').style.width = '0%';
       $('.tut').classList.remove('done');
-      voice.say(step.text);
     },
     update(dt, t, input) {
       pointer.update({ ...cursorPx, visible: !!gs?.present, pose: gs?.pose, pinch: gs?.progress?.pinch ?? 0, clicked: false }, dt);
@@ -457,7 +442,6 @@ const SCREENS = {
           setScreen('play', true);
         });
       }
-      voice.say('Этаж пройден. Выбери умение');
       pointer.enabled = true;
       this.wait = 0.9; // сначала осмотреться: случайный щипок или наведение не выберут карточку
     },
@@ -471,7 +455,6 @@ const SCREENS = {
 
   results: {
     enter() {
-      voice.stop();
       const a = arena;
       const acc = a.shots ? Math.round((a.hits / a.shots) * 100) : 0;
       const run = { score: a.score, wave: Math.min(10, a.floor), won: a.won, kills: a.kills };
@@ -514,11 +497,6 @@ $('#recalBtn').addEventListener('click', () => { sfx.click(); setScreen('calibra
 $('#skipBtn').addEventListener('click', () => { sfx.click(); setTutorialDone(); setScreen('countdown'); });
 $('#againBtn').addEventListener('click', () => { sfx.click(); setScreen('countdown'); });
 $('#menuBtn').addEventListener('click', () => { sfx.click(); setScreen('menu'); });
-$('#voiceBtn').addEventListener('click', () => {
-  voice.enabled = !voice.enabled;
-  if (!voice.enabled) voice.stop();
-  $('#voiceBtn').textContent = voice.enabled ? '🔊 Голос: вкл' : '🔇 Голос: выкл';
-});
 addEventListener('keydown', (e) => {
   if (e.code === 'KeyD' && e.shiftKey) {
     DEBUG = !DEBUG;
