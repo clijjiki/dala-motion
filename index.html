@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>DALA Motion — Dota жестами</title>
+  <meta name="description" content="Браузерная игра, которой управляют жестами руки через веб-камеру. Admit Hackathon 2026, кейс Motion." />
+  <meta name="theme-color" content="#0d0a24" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✋</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-screen="intro">
+  <canvas id="arena"></canvas>
+  <video id="video" playsinline muted></video>
+
+  <!-- HUD во время игры -->
+  <header id="hud">
+    <div class="bars">
+      <div class="bar hp"><span>Здоровье</span><i id="hpFill"></i></div>
+      <div class="bar energy"><span>Ульта</span><i id="energyFill"></i></div>
+    </div>
+    <div class="hud-right">
+      <div class="stat"><small>Волна</small><b id="waveLabel">1/5</b></div>
+      <div class="stat"><small>Счёт</small><b id="score">0</b></div>
+    </div>
+  </header>
+
+  <!-- Карточки жестов: живой прогресс каждого жеста -->
+  <nav id="gestures">
+    <div class="gcard" data-g="pinch"><em>👌</em><span>Идти</span><small>большой + указательный</small><i></i></div>
+    <div class="gcard" data-g="shoot"><em>🤏</em><span>Способность</span><small>большой + средний</small><i></i></div>
+    <div class="gcard" data-g="fist"><em>✊</em><span>Камера</span><small>кулак + движение</small><i></i></div>
+    <div class="gcard" data-g="ult"><em>✊✊</em><span>Ульта</span><small>два кулака</small><i></i></div>
+  </nav>
+
+  <div id="camWrap"><canvas id="cam"></canvas><div class="cam-label">твоя рука</div></div>
+
+  <div id="toast" class="toast"><span class="toast-icon"></span><p class="toast-text"></p></div>
+  <div id="banner"></div>
+  <div id="waveTitle"><b></b><span></span></div>
+
+  <!-- ЭКРАН 1: вступление -->
+  <section class="panel" id="p-intro">
+    <div class="card intro">
+      <p class="kicker">Admit Hackathon 2026 · кейс «Motion»</p>
+      <h1>DALA<br />MOTION</h1>
+      <p class="lead">Веб-камера вместо мыши. Управляй Dota 2 или тренировочной ареной одной рукой: палец — курсор, щипок — идти, кулак — камера.</p>
+      <ol class="steps">
+        <li><b>1</b>Разреши доступ к камере</li>
+        <li><b>2</b>Покажи раскрытую ладонь</li>
+        <li><b>3</b>Управляй жестами, как мышью</li>
+      </ol>
+      <button id="startBtn" class="btn primary big">Включить камеру</button>
+      <p id="introStatus" class="status"></p>
+      <p class="fine">Видео обрабатывается прямо в браузере и никуда не отправляется. Лучше всего — Chrome или Edge, хорошее освещение, рука в 40–70 см от камеры.</p>
+    </div>
+  </section>
+
+  <!-- ЭКРАН 2: калибровка -->
+  <section class="panel" id="p-calibrate">
+    <div class="card calib">
+      <h2>Покажи ладонь</h2>
+      <p class="lead">Раскрой ладонь к камере там, где тебе удобно держать руку, и замри на секунду.</p>
+      <div class="ring" id="calibRing"><span>🖐</span></div>
+      <p id="calibIssue" class="issue"></p>
+    </div>
+  </section>
+
+  <!-- ЭКРАН 3: меню -->
+  <section class="panel" id="p-menu">
+    <div class="card menu">
+      <p class="kicker">Привет, <b id="playerName"></b></p>
+      <h2>DALA MOTION</h2>
+      <p class="hint-line">Наведи указательный палец на кнопку и сведи 👌 большой и указательный — или просто подержи.</p>
+      <div class="menu-buttons">
+        <button class="btn primary big" data-hand id="dotaBtn">🎮 Режим Dota 2</button>
+        <button class="btn big" data-hand id="playBtn">⚔️ Тренировочная арена</button>
+        <button class="btn" data-hand id="tutorialBtn">🎓 Обучение</button>
+        <button class="btn" data-hand id="recalBtn">🖐 Перекалибровка</button>
+        <button class="btn" data-hand id="voiceBtn">🔊 Голос: вкл</button>
+      </div>
+      <div class="records" id="menuRecords"></div>
+    </div>
+  </section>
+
+  <!-- ЭКРАН 4: обучение -->
+  <section class="panel" id="p-tutorial">
+    <div class="tut">
+      <div class="tut-step" id="tutStep">1/5</div>
+      <div class="tut-icon" id="tutIcon">👌</div>
+      <h2 id="tutTitle"></h2>
+      <p id="tutText"></p>
+      <div class="tut-progress"><i id="tutFill"></i></div>
+      <button class="btn small" data-hand id="skipBtn">Пропустить обучение</button>
+    </div>
+    <div id="tutTarget"></div>
+  </section>
+
+  <!-- ЭКРАН: управление Dota 2 -->
+  <section class="panel" id="p-dota">
+    <div class="card dota">
+      <div class="dota-head">
+        <h2>🎮 Режим Dota 2</h2>
+        <span id="bridgeStatus" class="pill off">мост не подключён</span>
+      </div>
+      <ol class="dota-steps">
+        <li>Запусти помощника на этом компьютере: <code>python bridge/dota_bridge.py</code></li>
+        <li>В Доте: <b>Настройки → Видео → Окно без рамки</b>, включи <b>быстрое применение</b> (Quick Cast) для способностей.</li>
+        <li>Нажми <b>«Мини-окно камеры»</b> — оно будет поверх Доты, как в ролике. Потом <b>«Начать управление»</b>.</li>
+      </ol>
+      <div class="dota-grid">
+        <label>Способность (🤏) <select id="abilityKey"><option>q</option><option>w</option><option>e</option><option>d</option><option>f</option></select></label>
+        <label>Ульта (✊✊) <select id="ultKey"><option>r</option><option>d</option><option>f</option><option>t</option></select></label>
+      </div>
+      <div class="menu-buttons">
+        <button class="btn primary big" id="dotaToggle">▶ Начать управление</button>
+        <button class="btn" id="pipBtn">🪟 Мини-окно камеры</button>
+        <button class="btn" data-hand id="dotaBack">☰ Меню</button>
+      </div>
+      <p class="fine" id="dotaLog">F8 на клавиатуре — мгновенная пауза. Спрячь руку из кадра — управление остановится.</p>
+    </div>
+  </section>
+
+  <!-- ЭКРАН 5: отсчёт -->
+  <section class="panel" id="p-countdown"><div id="countNum">3</div></section>
+
+  <!-- ЭКРАН 6: итоги -->
+  <section class="panel" id="p-results">
+    <div class="card results">
+      <h2 id="resTitle">Победа!</h2>
+      <p class="big-score"><span id="resScore">0</span><small id="resBest"></small></p>
+      <div class="res-grid" id="resGrid"></div>
+      <h3>Над чем поработать</h3>
+      <ul class="mistakes" id="resMistakes"></ul>
+      <div class="res-bottom">
+        <div class="records" id="resRecords"></div>
+        <div class="progress-chart"><h3>Твой прогресс</h3><div id="resHistory"></div></div>
+      </div>
+      <div class="menu-buttons row">
+        <button class="btn primary big" data-hand id="againBtn">↻ Ещё раз</button>
+        <button class="btn" data-hand id="menuBtn">☰ Меню</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="pointer" hidden><i></i></div>
+  <pre id="debug" hidden></pre>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
