@@ -8,13 +8,17 @@ export class HandPointer {
     this.hover = null;
     this.hoverT = 0;
     this.enabled = true;
+    this.lostT = 0;
   }
 
   update({ x, y, visible, pose, clicked }, dt) {
     const el = this.el;
-    el.hidden = !visible;
+    // Рука на миг пропала (быстрое движение) — не прячем курсор сразу, а плавно гасим.
+    this.lostT = visible ? 0 : this.lostT + dt;
+    el.hidden = this.lostT > 0.6;
+    el.style.opacity = visible ? 1 : Math.max(0.15, 1 - this.lostT / 0.6);
     el.style.transform = `translate(${x}px, ${y}px)`;
-    el.dataset.pose = pose || 'open';
+    if (visible) el.dataset.pose = pose || 'open';
     if (!visible || !this.enabled) {
       this.setHover(null);
       return;

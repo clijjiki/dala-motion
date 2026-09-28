@@ -3,8 +3,8 @@ export const CONFIG = {
   vision: {
     wasm: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm',
     model: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-    minDetection: 0.6,
-    minTracking: 0.5,
+    minDetection: 0.5,
+    minTracking: 0.35,     // ниже = рука реже «теряется» при быстром движении
   },
 
   // Геометрия руки. Все расстояния нормированы на размер ладони
@@ -12,8 +12,8 @@ export const CONFIG = {
   hand: {
     palmCm: 9,            // средний реальный размер ладони, для подсказок «ещё N см»
     pinchOn: 0.30,        // щипок срабатывает
-    pinchOff: 0.46,       // щипок отпущен (гистерезис)
-    pinchNear: 0.52,      // «почти щипок» — зона для подсказок режима ошибки
+    pinchOff: 0.58,       // щипок отпущен (гистерезис): держится, пока пальцы не развёл заметно
+    pinchNear: 0.56,      // «почти щипок» — зона для подсказок режима ошибки
     extended: 0.62,       // палец разогнут
     curled: 0.32,         // палец согнут
     fistHold: 0.15,       // сек удержания кулака до включения камеры / ульты

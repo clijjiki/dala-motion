@@ -39,7 +39,7 @@ export class Calibrator {
     }
     this.since ??= t;
     this.progress = Math.min(1, (t - this.since) / HOLD);
-    if (this.progress >= 1) return { anchor: s.pts[8], palm: s.a.palm };
+    if (this.progress >= 1) return { anchor: s.point ?? s.pts[8], palm: s.a.palm };
     return null;
   }
 }

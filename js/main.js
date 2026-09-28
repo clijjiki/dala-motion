@@ -78,7 +78,6 @@ function stableCursorPx(t) {
 const quiet = (s) => (s ? { ...s, events: [], hints: [] } : null);
 
 // Жесты → команды арене. Общая функция для обучения и игры.
-let pinchStart = 0;
 function applyGameInput(input, t, dt) {
   if (!input?.present) return;
   const aim = arena.toWorld(cursorPx);
@@ -86,7 +85,6 @@ function applyGameInput(input, t, dt) {
     if (ev === 'pinch') {
       const p = arena.toWorld(stableCursorPx(t));
       arena.commandMove(p.x, p.y);
-      pinchStart = t;
       sfx.move();
       hud.flash('pinch');
     } else if (ev === 'shoot') {
@@ -99,7 +97,7 @@ function applyGameInput(input, t, dt) {
     }
   }
   // Держишь щипок — герой идёт за курсором (как зажатая правая кнопка в Доте).
-  if (input.pinchHeld && t - pinchStart > 0.18) arena.moveTo(aim.x, aim.y);
+  if (input.pinchHeld) arena.moveTo(aim.x, aim.y);
   if (input.shootHeld) arena.shootAt(aim.x, aim.y);
   if (input.pan) arena.panCamera(input.pan, dt);
   for (const h of input.hints) coach.offer(h, t);
@@ -339,7 +337,7 @@ const dota = {
       bridge.move(pos.x, pos.y);
     }
     // Держишь щипок — повторяем правый клик, герой идёт за курсором.
-    if (input.pinchHeld && t - this.lastFollow > 0.3) {
+    if (input.pinchHeld && t - this.lastFollow > 0.15) {
       bridge.send({ t: 'rclick', x: pos.x, y: pos.y });
       this.lastFollow = t;
     }

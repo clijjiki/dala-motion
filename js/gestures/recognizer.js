@@ -90,8 +90,10 @@ export class HandRecognizer {
     const isShoot = !fist && !isPinch && a.pinchMiddle < shootLimit && a.pinchIndex > a.pinchMiddle + 0.1;
 
     out.pose = fist ? 'fist' : isPinch ? 'pinch' : isShoot ? 'shoot' : 'open';
-    // Курсор ведёт кончик указательного. В кулаке он спрятан — курсор замирает.
-    out.point = fist ? null : P.h.pts[8];
+    // Курсор — точка между кончиками большого и указательного: при щипке пальцы
+    // сходятся именно в неё, поэтому курсор не прыгает. В кулаке курсор замирает.
+    const p4 = P.h.pts[4], p8 = P.h.pts[8];
+    out.point = fist ? null : { x: (p4.x + p8.x) / 2, y: (p4.y + p8.y) / 2 };
 
     // ---------- два кулака → ульта ----------
     const twoT = this.hold('two', fist && fist2, t);
