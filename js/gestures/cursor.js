@@ -21,6 +21,7 @@ export class CursorMapper {
     this.history = [];
     this.pos = { x: 0.5, y: 0.5 };
     this.visible = false;
+    this.freezeUntil = 0;
   }
 
   calibrate(anchor, palm, W, H) {
@@ -45,6 +46,11 @@ export class CursorMapper {
     }
     this.visible = true;
     if (!state.point) return this.pos; // кулак — курсор стоит на месте
+    if (state.events?.includes('pinch')) {
+      this.pos = { x: this.stablePos(t).x, y: this.stablePos(t).y };
+      this.freezeUntil = t + C.clickFreeze;
+    }
+    if (t < this.freezeUntil) return this.pos; // клик: курсор замер
     const { cx, cy, w, h } = this.box;
     const nx = clamp((state.point.x / W - (cx - w / 2)) / w, 0, 1);
     const ny = clamp((state.point.y / H - (cy - h / 2)) / h, 0, 1);

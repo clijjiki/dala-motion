@@ -11,8 +11,9 @@ export class HandPointer {
     this.lostT = 0;
   }
 
-  update({ x, y, visible, pose, clicked }, dt) {
+  update({ x, y, visible, pose, clicked, pinch = 0 }, dt) {
     const el = this.el;
+    el.style.setProperty('--p', pinch);
     // Рука на миг пропала (быстрое движение) — не прячем курсор сразу, а плавно гасим.
     this.lostT = visible ? 0 : this.lostT + dt;
     el.hidden = this.lostT > 0.6;

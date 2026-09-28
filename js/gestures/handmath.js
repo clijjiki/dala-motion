@@ -15,6 +15,8 @@ export const FINGER_RU = {
 
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+// С глубиной: большой палец, который просто перекрывает указательный на картинке, не считается щипком.
+export const dist3 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, ((a.z ?? 0) - (b.z ?? 0)) * 0.5); // глубина шумнее — половинный вес
 export const lerp = (a, b, t) => a + (b - a) * t;
 
 // Степень разгибания пальца 0..1: насколько кончик дальше от запястья, чем основание.
@@ -25,7 +27,8 @@ function extension(p, mcp, tip) {
 }
 
 export function analyzeHand(p, frameH) {
-  const palm = dist(p[H.WRIST], p[9]);                 // «единица длины»
+  const palm = dist(p[H.WRIST], p[9]);
+  const palm3 = Math.max(1, dist3(p[H.WRIST], p[9]));                 // «единица длины»
   const palmWidth = dist(p[5], p[17]);
   const ext = {
     index: extension(p, 5, 8),
@@ -40,8 +43,8 @@ export function analyzeHand(p, frameH) {
     palmRel: palm / frameH,
     facing: palmWidth / palm,                      // ~0.8 ладонь к камере, <0.4 ребром
     ext,
-    pinchIndex: dist(p[4], p[8]) / palm,
-    pinchMiddle: dist(p[4], p[12]) / palm,
+    pinchIndex: dist3(p[4], p[8]) / palm3,
+    pinchMiddle: dist3(p[4], p[12]) / palm3,
     anchor: { x: (p[0].x + p[5].x + p[9].x + p[17].x) / 4, y: (p[0].y + p[5].y + p[9].y + p[17].y) / 4 },
   };
 }

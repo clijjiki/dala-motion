@@ -29,7 +29,22 @@ export class HandRecognizer {
     this.ultArmed = true;
     this.primaryAnchor = null;
     this.timers = new Map();
+    this.counts = {};
     this.state = null;
+  }
+
+  // Антидребезг: состояние меняется, только если новый вариант продержался N кадров подряд.
+  debounce(key, raw, held, onFrames = 2, offFrames = 3) {
+    if (raw === held) {
+      this.counts[key] = 0;
+      return held;
+    }
+    this.counts[key] = (this.counts[key] ?? 0) + 1;
+    if (this.counts[key] >= (raw ? onFrames : offFrames)) {
+      this.counts[key] = 0;
+      return raw;
+    }
+    return held;
   }
 
   // Сколько секунд подряд выполняется условие.
@@ -59,6 +74,7 @@ export class HandRecognizer {
     this.state = out;
 
     if (!hands?.length) {
+      this.counts = {};
       if (this.pinchHeld) out.events.push('pinchUp');
       if (this.panning) out.events.push('panEnd');
       this.pinchHeld = this.shootHeld = this.panning = false;
@@ -86,8 +102,10 @@ export class HandRecognizer {
       && Math.abs(a.pinchIndex - a.pinchMiddle) < 0.12;
     const pinchLimit = this.pinchHeld ? C.pinchOff : C.pinchOn;
     const shootLimit = this.shootHeld ? C.pinchOff : C.pinchOn;
-    const isPinch = !fist && e.index >= 0.2 && a.pinchIndex < pinchLimit && a.pinchMiddle > a.pinchIndex + 0.1;
-    const isShoot = !fist && !isPinch && a.pinchMiddle < shootLimit && a.pinchIndex > a.pinchMiddle + 0.1;
+    const rawPinch = !fist && e.index >= 0.2 && a.pinchIndex < pinchLimit && a.pinchMiddle > a.pinchIndex + 0.1;
+    const rawShoot = !fist && !rawPinch && a.pinchMiddle < shootLimit && a.pinchIndex > a.pinchMiddle + 0.1;
+    const isPinch = this.debounce('pinch', rawPinch, this.pinchHeld);
+    const isShoot = !isPinch && this.debounce('shoot', rawShoot, this.shootHeld);
 
     out.pose = fist ? 'fist' : isPinch ? 'pinch' : isShoot ? 'shoot' : 'open';
     // Курсор — точка между кончиками большого и указательного: при щипке пальцы

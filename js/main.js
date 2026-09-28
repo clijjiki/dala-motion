@@ -408,7 +408,7 @@ const SCREENS = {
       pointer.enabled = true;
     },
     update(dt, t, input) {
-      pointer.update({ ...cursorPx, visible: !!gs?.present, pose: gs?.pose, clicked: input?.events.includes('pinch') }, dt);
+      pointer.update({ ...cursorPx, visible: !!gs?.present, pose: gs?.pose, pinch: gs?.progress?.pinch ?? 0, clicked: input?.events.includes('pinch') }, dt);
       hud.banner(!SIM && !gs?.present ? '☝️ Покажи руку в камеру, чтобы управлять меню' : null);
       for (const h of input?.hints ?? []) if (h.gesture === 'any' || h.gesture === 'pinch') coach.offer(h, t);
     },
@@ -423,7 +423,7 @@ const SCREENS = {
     },
     update(dt, t, input) {
       // пока управляем Дотой, щипок по кнопкам сайта не нажимает (он уже правый клик в игре)
-      pointer.update({ ...cursorPx, visible: !!gs?.present && !dota.active, pose: gs?.pose, clicked: !dota.active && input?.events.includes('pinch') }, dt);
+      pointer.update({ ...cursorPx, visible: !!gs?.present && !dota.active, pose: gs?.pose, pinch: gs?.progress?.pinch ?? 0, clicked: !dota.active && input?.events.includes('pinch') }, dt);
       this.pingT -= dt;
       if (this.pingT <= 0) {
         this.pingT = 1;
@@ -467,7 +467,7 @@ const SCREENS = {
       voice.say(step.text);
     },
     update(dt, t, input) {
-      pointer.update({ ...cursorPx, visible: !!gs?.present, pose: gs?.pose, clicked: false }, dt);
+      pointer.update({ ...cursorPx, visible: !!gs?.present, pose: gs?.pose, pinch: gs?.progress?.pinch ?? 0, clicked: false }, dt);
       applyGameInput(input, t, dt);
       arena.update(dt);
       arena.drainEvents().forEach((e) => {
@@ -524,7 +524,7 @@ const SCREENS = {
       pointer.enabled = false;
     },
     update(dt, t, input) {
-      pointer.update({ ...cursorPx, visible: !!gs?.present, pose: gs?.pose, clicked: false }, dt);
+      pointer.update({ ...cursorPx, visible: !!gs?.present, pose: gs?.pose, pinch: gs?.progress?.pinch ?? 0, clicked: false }, dt);
       this.lost = gs?.present ? 0 : this.lost + dt;
       if (this.lost > 1.0) {
         hud.banner('⏸ Пауза — рука пропала из кадра. Покажи руку камере, и игра продолжится');
@@ -571,7 +571,7 @@ const SCREENS = {
       pointer.enabled = true;
     },
     update(dt, t, input) {
-      pointer.update({ ...cursorPx, visible: !!gs?.present, pose: gs?.pose, clicked: input?.events.includes('pinch') }, dt);
+      pointer.update({ ...cursorPx, visible: !!gs?.present, pose: gs?.pose, pinch: gs?.progress?.pinch ?? 0, clicked: input?.events.includes('pinch') }, dt);
     },
   },
 };

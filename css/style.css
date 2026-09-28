@@ -251,6 +251,10 @@ body[data-screen="results"] .toast { display: none; }
   border: 3px solid #fff; box-shadow: 0 0 16px rgba(255, 255, 255, 0.6), inset 0 0 0 3px rgba(0, 0, 0, 0.25);
   transition: transform 0.08s, border-color 0.08s, background 0.08s;
 }
+#pointer i::after { /* заполняется, пока сводишь большой и указательный */
+  content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--green);
+  transform: scale(var(--p, 0)); opacity: 0.85; transition: transform 0.06s;
+}
 #pointer[data-pose="pinch"] i { transform: scale(0.6); border-color: var(--green); background: rgba(61, 220, 151, 0.4); }
 #pointer[data-pose="shoot"] i { border-color: var(--gold); background: rgba(255, 209, 102, 0.35); }
 #pointer[data-pose="fist"] i { border-color: var(--cyan); }
