@@ -42,19 +42,25 @@ export const CONFIG = {
   },
 
   game: {
-    heroHp: 100,
+    heroHp: 150,
+    heroRegen: 1.5,       // HP в секунду
+    autoRange: 290,       // автоатака, как в Доте: герой сам бьёт ближайшего врага
+    autoCooldown: 0.6,
+    autoDamage: 1,
+    aimAssist: 170,       // способность летит во врага, ближайшего к курсору в этом радиусе
+    boltPierce: 3,        // способность пробивает несколько врагов
     heroSpeed: 300,
     boltSpeed: 820,
     boltCooldown: 0.32,
-    boltDamage: 1,
+    boltDamage: 2,
     worldW: 2600,         // карта больше экрана — камеру двигает кулак
     worldH: 1700,
     camSpeed: 950,        // пикс/с при полном отклонении кулака
     ultCost: 100,
     ultRadius: 300,
     ultDamage: 6,
-    energyPerKill: 14,
+    energyPerKill: 12,
     wavePause: 3.5,
-    healBetweenWaves: 20,
+    healBetweenWaves: 40,
   },
 };

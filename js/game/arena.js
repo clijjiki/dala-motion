@@ -31,7 +31,7 @@ export class Arena {
     this.sandbox = sandbox;
     this.hero = {
       x: this.WW / 2, y: this.WH / 2, r: 20, hp: G.heroHp, target: null,
-      energy: 0, cd: 0, dir: { x: 1, y: 0 }, hurtT: 0, walkT: 0,
+      energy: 0, cd: 0, autoCd: 0, dir: { x: 1, y: 0 }, hurtT: 0, walkT: 0,
     };
     this.centerCam();
     this.enemies = [];
@@ -115,6 +115,9 @@ export class Arena {
   shootAt(x, y) {
     const h = this.hero;
     if (h.cd > 0) return false;
+    // Помощь в прицеливании: жестом точно не наведёшься, поэтому бьём врага, ближайшего к курсору.
+    const target = this.nearest({ x, y }, G.aimAssist);
+    if (target) ({ x, y } = target);
     let dx = x - h.x, dy = y - h.y;
     const len = Math.hypot(dx, dy);
     if (len < 12) ({ x: dx, y: dy } = h.dir);
@@ -122,9 +125,32 @@ export class Arena {
     h.dir = { x: dx, y: dy };
     h.cd = G.boltCooldown;
     this.shots++;
-    this.bolts.push({ x: h.x + dx * 26, y: h.y + dy * 26, vx: dx * G.boltSpeed, vy: dy * G.boltSpeed, life: 1.1 });
+    this.bolts.push({ x: h.x + dx * 26, y: h.y + dy * 26, vx: dx * G.boltSpeed, vy: dy * G.boltSpeed, life: 1.1,
+      dmg: G.boltDamage, pierce: G.boltPierce, hitSet: new Set() });
     this.emit('shot');
     return true;
+  }
+
+  nearest(p, radius) {
+    let best = null, bd = radius;
+    for (const e of this.enemies) {
+      const d = dist(e, p) - e.r;
+      if (!e.dead && d < bd) { bd = d; best = e; }
+    }
+    return best;
+  }
+
+  // Автоатака: маленький снаряд в ближайшего врага в радиусе.
+  autoAttack(dt) {
+    const h = this.hero;
+    h.autoCd -= dt;
+    if (h.autoCd > 0) return;
+    const e = this.nearest(h, G.autoRange);
+    if (!e) return;
+    h.autoCd = G.autoCooldown;
+    const dx = e.x - h.x, dy = e.y - h.y, len = Math.hypot(dx, dy) || 1;
+    this.bolts.push({ x: h.x, y: h.y, vx: (dx / len) * 700, vy: (dy / len) * 700, life: 0.8,
+      dmg: G.autoDamage, pierce: 1, hitSet: new Set(), auto: true });
   }
 
   ult() {
@@ -269,6 +295,8 @@ export class Arena {
     // Герой
     h.cd = Math.max(0, h.cd - dt);
     h.hurtT = Math.max(0, h.hurtT - dt);
+    h.hp = Math.min(G.heroHp, h.hp + G.heroRegen * dt);
+    if (this.phase !== 'sandbox') this.autoAttack(dt);
     if (h.target) {
       const dx = h.target.x - h.x, dy = h.target.y - h.y;
       const d = Math.hypot(dx, dy);
@@ -342,12 +370,17 @@ export class Arena {
       b.y += b.vy * dt;
       b.life -= dt;
       for (const e of this.enemies) {
-        if (!e.dead && dist(b, e) < e.r + 6) {
-          this.damage(e, G.boltDamage);
-          this.hits++;
-          this.stats.shoot.ok++;
-          b.life = 0;
-          break;
+        if (!e.dead && !b.hitSet.has(e) && dist(b, e) < e.r + 6) {
+          b.hitSet.add(e);
+          this.damage(e, b.dmg);
+          if (!b.auto) {
+            if (b.hitSet.size === 1) this.hits++;
+            this.stats.shoot.ok++;
+          }
+          if (b.hitSet.size >= b.pierce) {
+            b.life = 0;
+            break;
+          }
         }
       }
     }
