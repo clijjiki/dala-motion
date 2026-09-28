@@ -591,7 +591,9 @@ $('#dotaToggle').addEventListener('click', async () => {
   if (dota.active) return dota.setActive(false);
   if (!(await bridge.ping())) {
     dota.status();
-    dota.log('Мост не отвечает. Открой консоль в папке проекта и запусти: python bridge/dota_bridge.py');
+    dota.log(location.port === '8765'
+      ? 'Мост не отвечает. Перезапусти: python bridge/dota_bridge.py'
+      : 'Мост не отвечает. Запусти python bridge/dota_bridge.py — он сам откроет сайт на http://127.0.0.1:8765, управляй Дотой оттуда.');
     return;
   }
   dota.setActive(true);

@@ -5,8 +5,11 @@ DALA Motion — мост «браузер → Windows» для управлен�
 («курсор сюда», «правый клик», «нажми Q», «камера влево»),
 а этот скрипт превращает их в настоящие движения мыши и нажатия клавиш.
 
-Запуск:   python dota_bridge.py
+Запуск:   python bridge/dota_bridge.py   (сам откроет сайт на http://127.0.0.1:8765)
 Нужно:    Windows + Python 3.8+. Никаких сторонних библиотек.
+
+Помощник ещё и раздаёт сам сайт: так страница и мост живут на одном адресе,
+и браузер не блокирует запросы к локальной сети (с https-сайта он бы их заблокировал).
 Стоп:     F8 — пауза/продолжить, Ctrl+C в консоли — выход.
 
 Слушает только 127.0.0.1 — с других компьютеров к нему подключиться нельзя.
@@ -16,10 +19,14 @@ import json
 import sys
 import threading
 import time
+import webbrowser
 from ctypes import wintypes
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 HOST, PORT = "127.0.0.1", 8765
+SITE_DIR = Path(__file__).resolve().parent.parent  # корень проекта с index.html
 
 if sys.platform != "win32":
     sys.exit("Мост работает только на Windows.")
@@ -155,7 +162,9 @@ def handle(cmd):
         release_all()
 
 
-class Handler(BaseHTTPRequestHandler):
+class Handler(SimpleHTTPRequestHandler):
+    extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".js": "text/javascript", ".mjs": "text/javascript"}
+
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -180,7 +189,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/status"):
             self._json(200, {"ok": True, "paused": paused, "screen": [SCREEN_W, SCREEN_H], **stats})
         else:
-            self._json(404, {"ok": False})
+            super().do_GET()  # файлы сайта
 
     def do_POST(self):
         global last_cmd
@@ -232,14 +241,16 @@ def hotkeys():
 def main():
     threading.Thread(target=watchdog, daemon=True).start()
     threading.Thread(target=hotkeys, daemon=True).start()
-    server = ThreadingHTTPServer((HOST, PORT), Handler)
+    server = ThreadingHTTPServer((HOST, PORT), partial(Handler, directory=str(SITE_DIR)))
     print("=" * 60)
     print(" DALA Motion — мост к Dota 2 запущен")
     print(f" Адрес: http://{HOST}:{PORT}   Экран: {SCREEN_W}x{SCREEN_H}")
-    print(" Теперь открой сайт и нажми «Режим Dota 2».")
+    print(f" Сайт: http://{HOST}:{PORT}/  — открываю в браузере, там «Режим Dota 2».")
     print(" F8 — пауза/продолжить.  Ctrl+C — выход.")
     print(" Совет: в Доте включи режим «Окно без рамки» (Borderless window).")
     print("=" * 60)
+    if (SITE_DIR / "index.html").exists() and "--no-browser" not in sys.argv:
+        threading.Timer(0.8, lambda: webbrowser.open(f"http://{HOST}:{PORT}/")).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:

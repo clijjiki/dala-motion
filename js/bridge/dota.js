@@ -2,7 +2,8 @@
 // а мост на этом компьютере двигает настоящую мышь и нажимает клавиши.
 // Движения курсора склеиваются: пока летит один запрос, копится только последнее положение.
 export class DotaBridge {
-  constructor(url = 'http://127.0.0.1:8765') {
+  // Если сайт открыт самим помощником — тот же адрес; иначе стучимся на localhost.
+  constructor(url = location.port === '8765' ? location.origin : 'http://127.0.0.1:8765') {
     this.url = url;
     this.connected = false;
     this.paused = false;
