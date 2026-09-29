@@ -124,7 +124,7 @@ function handleArenaEvents(t) {
         } else if (ev.source === 'orb') {
           arena.stats.pinch.err++;
           coach.force({ id: 'hurt_orb', gesture: 'pinch', kind: 'danger', icon: '💥', focus: PINCH,
-            text: 'Попал снаряд шамана! Зелёные шары летят по прямой — отойди щипком 👌 в сторону' }, t);
+            text: 'Попал снаряд шамана! Розовые шары летят по прямой — отойди щипком 👌 в сторону' }, t);
         } else if (ev.source === 'boar') {
           arena.stats.pinch.err++;
           coach.force({ id: 'hurt_boar', gesture: 'pinch', kind: 'danger', icon: '🐗', focus: PINCH,

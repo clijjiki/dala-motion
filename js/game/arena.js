@@ -6,6 +6,7 @@ const G = CONFIG.game;
 const rand = (a, b) => a + Math.random() * (b - a);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const EDGE = 70; // каменная стена по краю карты
 
 // Логика арены в духе Archero. Ничего не знает о камере и жестах — получает команды
 // (идти, залп, двигать камеру, ульта, выбрать умение) и отдаёт события для тренера, звука и интерфейса.
@@ -110,7 +111,7 @@ export class Arena {
 
   // ---------- команды игрока (координаты мира) ----------
   moveTo(x, y) {
-    this.hero.target = { x: clamp(x, 20, this.WW - 20), y: clamp(y, 20, this.WH - 20) };
+    this.hero.target = { x: clamp(x, EDGE, this.WW - EDGE), y: clamp(y, EDGE, this.WH - EDGE) }; // не заходим на стены
   }
 
   stop() {
@@ -199,8 +200,8 @@ export class Arena {
     else {
       const a = Math.random() * Math.PI * 2;
       const r = Math.hypot(this.W, this.H) * 0.45 + rand(20, 120);
-      x = clamp(this.hero.x + Math.cos(a) * r, 30, this.WW - 30);
-      y = clamp(this.hero.y + Math.sin(a) * r, 30, this.WH - 30);
+      x = clamp(this.hero.x + Math.cos(a) * r, EDGE, this.WW - EDGE);
+      y = clamp(this.hero.y + Math.sin(a) * r, EDGE, this.WH - EDGE);
     }
     const scale = this.spec?.hpScale ?? 1;
     const hp = Math.round(def.hp * scale * (def.boss && this.floor >= 10 ? 1.6 : 1));
@@ -516,8 +517,8 @@ export class Arena {
     } else if (e.mode === 'dash') {
       e.x += e.dash.x * 720 * dt;
       e.y += e.dash.y * 720 * dt;
-      e.x = clamp(e.x, 20, this.WW - 20);
-      e.y = clamp(e.y, 20, this.WH - 20);
+      e.x = clamp(e.x, EDGE, this.WW - EDGE);
+      e.y = clamp(e.y, EDGE, this.WH - EDGE);
       if (!e.hitDone && dist(e, h) < e.r + h.r) {
         e.hitDone = true;
         this.hurt(e.def.dmg, 'boar');
